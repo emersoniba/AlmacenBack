@@ -1,0 +1,196 @@
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import login
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema
+
+from modulos.utilitario.viewset import RestViewSet
+from modulos.utilitario.response import SuccessResponse, ErrorResponse
+from .models import Usuario, Persona, Rol, UsuarioRol
+from .serializers import (
+    UsuarioSerializer, PersonaSerializer, RolSerializer,
+    RegistroUsuarioSerializer, LoginSerializer, TokenResponseSerializer,
+    UsuarioRolSerializer
+)
+
+@extend_schema(tags=['Gestión de Users'])
+class AuthViewSet(viewsets.GenericViewSet):
+    permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
+    
+    @action(detail=False, methods=['post'], url_path='login')
+    def login(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return ErrorResponse(
+                message='Error de validación',
+                errors=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = serializer.validated_data['user']
+        
+        # Actualizar último login
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+        
+        # Generar tokens
+        refresh = RefreshToken.for_user(user)
+        
+        # Serializar usuario
+        user_serializer = UsuarioSerializer(user, context={'request': request})
+        
+        return SuccessResponse(
+            message='Login exitoso',
+            data={
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': user_serializer.data
+            }
+        )
+    
+    @action(detail=False, methods=['post'], url_path='register')
+    def register(self, request):
+        serializer = RegistroUsuarioSerializer(data=request.data)
+        if not serializer.is_valid():
+            return ErrorResponse(
+                message='Error en el registro',
+                errors=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = serializer.save()
+        
+        # Generar tokens
+        refresh = RefreshToken.for_user(user)
+        user_serializer = UsuarioSerializer(user, context={'request': request})
+        
+        return SuccessResponse(
+            message='Usuario registrado exitosamente',
+            data={
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': user_serializer.data
+            },
+            status_code=status.HTTP_201_CREATED
+        )
+    
+    @action(detail=False, methods=['post'], url_path='refresh')
+    def refresh_token(self, request):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return ErrorResponse(
+                message='Se requiere refresh token',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+            
+            return SuccessResponse(
+                message='Token refrescado exitosamente',
+                data={'access': access_token}
+            )
+        except Exception as e:
+            return ErrorResponse(
+                message='Token inválido o expirado',
+                status_code=status.HTTP_401_UNAUTHORIZED
+            )
+    
+    @action(detail=False, methods=['post'], url_path='logout')
+    def logout(self, request):
+        try:
+            refresh_token = request.data.get('refresh')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            
+            return SuccessResponse(message='Logout exitoso')
+        except Exception as e:
+            return ErrorResponse(message='Error en logout', errors=str(e))
+
+class UsuarioViewSet(RestViewSet):
+    queryset = Usuario.objects.all().select_related('persona').prefetch_related('roles')
+    serializer_class = UsuarioSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated()]
+    
+    @action(detail=True, methods=['post'], url_path='asignar-rol')
+    def asignar_rol(self, request, pk=None):
+        usuario = self.get_object()
+        rol_id = request.data.get('rol_id')
+        
+        if not rol_id:
+            return ErrorResponse(message='Se requiere rol_id')
+        
+        try:
+            rol = Rol.objects.get(id=rol_id)
+            
+            # Verificar si ya tiene el rol
+            if UsuarioRol.objects.filter(usuario=usuario, rol=rol).exists():
+                return ErrorResponse(message='El usuario ya tiene este rol')
+            
+            usuario_rol = UsuarioRol.objects.create(
+                usuario=usuario,
+                rol=rol
+            )
+            
+            serializer = UsuarioRolSerializer(usuario_rol)
+            return SuccessResponse(
+                message='Rol asignado exitosamente',
+                data=serializer.data,
+                status_code=status.HTTP_201_CREATED
+            )
+        except Rol.DoesNotExist:
+            return ErrorResponse(message='Rol no encontrado')
+        except Exception as e:
+            return ErrorResponse(message='Error al asignar rol', errors=str(e))
+    
+    @action(detail=True, methods=['delete'], url_path='quitar-rol/(?P<rol_id>[^/.]+)')
+    def quitar_rol(self, request, pk=None, rol_id=None):
+        usuario = self.get_object()
+        
+        try:
+            usuario_rol = UsuarioRol.objects.get(usuario=usuario, rol_id=rol_id)
+            usuario_rol.delete()
+            
+            return SuccessResponse(message='Rol removido exitosamente')
+        except UsuarioRol.DoesNotExist:
+            return ErrorResponse(message='El usuario no tiene este rol')
+        except Exception as e:
+            return ErrorResponse(message='Error al quitar rol', errors=str(e))
+    
+    @action(detail=True, methods=['get'], url_path='roles')
+    def listar_roles(self, request, pk=None):
+        usuario = self.get_object()
+        usuario_roles = UsuarioRol.objects.filter(usuario=usuario).select_related('rol')
+        serializer = UsuarioRolSerializer(usuario_roles, many=True)
+        
+        return SuccessResponse(
+            message='Roles del usuario',
+            data=serializer.data
+        )
+
+class PersonaViewSet(RestViewSet):
+    queryset = Persona.objects.all()
+    serializer_class = PersonaSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(creado_por=self.request.user)
+    
+    def perform_update(self, serializer):
+        serializer.save(modificado_por=self.request.user, fecha_modificacion=timezone.now())
+
+@extend_schema(tags=['Gestión de Roles'])
+class RolViewSet(RestViewSet):
+    queryset = Rol.objects.all()
+    serializer_class = RolSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save()
