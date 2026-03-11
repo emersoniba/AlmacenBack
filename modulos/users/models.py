@@ -33,18 +33,26 @@ class Rol(models.Model):
         return self.nombre
 
 class Usuario(AbstractUser):
-    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, null=True, blank=True, related_name='usuarios')
-    roles = models.ManyToManyField(Rol, through='UsuarioRol', related_name='usuarios')
+    first_name = None
+    last_name = None
     
-    # Campos adicionales que podrías necesitar
-    esta_activo = models.BooleanField(default=True)
+    persona = models.OneToOneField(
+        Persona, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='usuario'
+    )
+    roles = models.ManyToManyField(Rol, through='UsuarioRol', related_name='usuarios')
     
     class Meta:
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
     
     def __str__(self):
-        return f"{self.username} - {self.get_full_name()}"
+        if self.persona:
+            return f"{self.username} - {self.persona.nombres} {self.persona.apellido_paterno or ''}"
+        return self.username
 
 class UsuarioRol(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='usuario_roles')

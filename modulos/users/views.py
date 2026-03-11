@@ -112,72 +112,6 @@ class AuthViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return ErrorResponse(message='Error en logout', errors=str(e))
 
-''''
-class UsuarioViewSet(RestViewSet):
-    queryset = Usuario.objects.all().select_related('persona').prefetch_related('roles')
-    serializer_class = UsuarioSerializer
-    
-    def get_permissions(self):
-        if self.action in ['create', 'list', 'retrieve']:
-            return [IsAuthenticated()]
-        return [IsAuthenticated()]
-    
-    @action(detail=True, methods=['post'], url_path='asignar-rol')
-    def asignar_rol(self, request, pk=None):
-        usuario = self.get_object()
-        rol_id = request.data.get('rol_id')
-        
-        if not rol_id:
-            return ErrorResponse(message='Se requiere rol_id')
-        
-        try:
-            rol = Rol.objects.get(id=rol_id)
-            
-            # Verificar si ya tiene el rol
-            if UsuarioRol.objects.filter(usuario=usuario, rol=rol).exists():
-                return ErrorResponse(message='El usuario ya tiene este rol')
-            
-            usuario_rol = UsuarioRol.objects.create(
-                usuario=usuario,
-                rol=rol
-            )
-            
-            serializer = UsuarioRolSerializer(usuario_rol)
-            return SuccessResponse(
-                message='Rol asignado exitosamente',
-                data=serializer.data,
-                status_code=status.HTTP_201_CREATED
-            )
-        except Rol.DoesNotExist:
-            return ErrorResponse(message='Rol no encontrado')
-        except Exception as e:
-            return ErrorResponse(message='Error al asignar rol', errors=str(e))
-    
-    @action(detail=True, methods=['delete'], url_path='quitar-rol/(?P<rol_id>[^/.]+)')
-    def quitar_rol(self, request, pk=None, rol_id=None):
-        usuario = self.get_object()
-        
-        try:
-            usuario_rol = UsuarioRol.objects.get(usuario=usuario, rol_id=rol_id)
-            usuario_rol.delete()
-            
-            return SuccessResponse(message='Rol removido exitosamente')
-        except UsuarioRol.DoesNotExist:
-            return ErrorResponse(message='El usuario no tiene este rol')
-        except Exception as e:
-            return ErrorResponse(message='Error al quitar rol', errors=str(e))
-    
-    @action(detail=True, methods=['get'], url_path='roles')
-    def listar_roles(self, request, pk=None):
-        usuario = self.get_object()
-        usuario_roles = UsuarioRol.objects.filter(usuario=usuario).select_related('rol')
-        serializer = UsuarioRolSerializer(usuario_roles, many=True)
-        
-        return SuccessResponse(
-            message='Roles del usuario',
-            data=serializer.data
-        )
-'''
 class UsuarioViewSet(RestViewSet):
     queryset = Usuario.objects.all().select_related('persona').prefetch_related('roles')
     serializer_class = UsuarioSerializer
@@ -301,17 +235,7 @@ class UsuarioViewSet(RestViewSet):
             message='Roles del usuario',
             data=serializer.data
         )
-##
-''''class PersonaViewSet(RestViewSet):
-    queryset = Persona.objects.all()
-    serializer_class = PersonaSerializer
-    
-    def perform_create(self, serializer):
-        serializer.save(creado_por=self.request.user)
-    
-    def perform_update(self, serializer):
-        serializer.save(modificado_por=self.request.user, fecha_modificacion=timezone.now())
-'''
+
 class PersonaViewSet(RestViewSet):
     queryset = Persona.objects.all()
     serializer_class = PersonaSerializer
