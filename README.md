@@ -16,3 +16,14 @@ Sistema backend desarrollado con Django REST Framework para la gestión de almac
 ```bash
 git clone <url-del-repositorio>
 cd BackendAlmacen
+
+### 2 Crear entorno virtual
+# Windows
+```bash
+python -m venv venv
+venv\Scripts\activate
+
+# Linux/Mac
+```bash
+python3 -m venv venv
+source venv/bin/activate
