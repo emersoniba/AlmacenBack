@@ -112,6 +112,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return ErrorResponse(message='Error en logout', errors=str(e))
 
+''''
 class UsuarioViewSet(RestViewSet):
     queryset = Usuario.objects.all().select_related('persona').prefetch_related('roles')
     serializer_class = UsuarioSerializer
@@ -176,8 +177,132 @@ class UsuarioViewSet(RestViewSet):
             message='Roles del usuario',
             data=serializer.data
         )
-
-class PersonaViewSet(RestViewSet):
+'''
+class UsuarioViewSet(RestViewSet):
+    queryset = Usuario.objects.all().select_related('persona').prefetch_related('roles')
+    serializer_class = UsuarioSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated()]
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        
+        if not serializer.is_valid():
+            return ErrorResponse(
+                message='Error de validación en los datos',
+                errors=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Guardar el usuario sin los campos de auditoría
+            usuario = serializer.save()
+            
+            return SuccessResponse(
+                message='Registro creado con éxito',
+                data=self.get_serializer(usuario).data,
+                status_code=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            return ErrorResponse(
+                message='Error interno del servidor',
+                errors=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
+        
+        if not serializer.is_valid():
+            return ErrorResponse(
+                message='Datos no válidos para actualización',
+                errors=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            usuario = serializer.save()
+            return SuccessResponse(
+                message='Registro actualizado con éxito',
+                data=self.get_serializer(usuario).data
+            )
+        except Exception as e:
+            return ErrorResponse(
+                message='Error interno al actualizar',
+                errors=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            # Soft delete si quieres, o delete real
+            instance.delete()
+            return SuccessResponse(message='Registro eliminado con éxito')
+        except Exception as e:
+            return ErrorResponse(message='Ocurrió un error', errors=str(e))
+    
+    @action(detail=True, methods=['post'], url_path='asignar-rol')
+    def asignar_rol(self, request, pk=None):
+        usuario = self.get_object()
+        rol_id = request.data.get('rol_id')
+        
+        if not rol_id:
+            return ErrorResponse(message='Se requiere rol_id')
+        
+        try:
+            rol = Rol.objects.get(id=rol_id)
+            # Verificar si ya tiene el rol
+            if UsuarioRol.objects.filter(usuario=usuario, rol=rol).exists():
+                return ErrorResponse(message='El usuario ya tiene este rol')
+            
+            usuario_rol = UsuarioRol.objects.create(
+                usuario=usuario,
+                rol=rol
+            )
+            
+            serializer = UsuarioRolSerializer(usuario_rol)
+            return SuccessResponse(
+                message='Rol asignado exitosamente',
+                data=serializer.data,
+                status_code=status.HTTP_201_CREATED
+            )
+        except Rol.DoesNotExist:
+            return ErrorResponse(message='Rol no encontrado')
+        except Exception as e:
+            return ErrorResponse(message='Error al asignar rol', errors=str(e))
+    
+    @action(detail=True, methods=['delete'], url_path='quitar-rol/(?P<rol_id>[^/.]+)')
+    def quitar_rol(self, request, pk=None, rol_id=None):
+        usuario = self.get_object()
+        
+        try:
+            usuario_rol = UsuarioRol.objects.get(usuario=usuario, rol_id=rol_id)
+            usuario_rol.delete()
+            
+            return SuccessResponse(message='Rol removido exitosamente')
+        except UsuarioRol.DoesNotExist:
+            return ErrorResponse(message='El usuario no tiene este rol')
+        except Exception as e:
+            return ErrorResponse(message='Error al quitar rol', errors=str(e))
+    
+    @action(detail=True, methods=['get'], url_path='roles')
+    def listar_roles(self, request, pk=None):
+        usuario = self.get_object()
+        usuario_roles = UsuarioRol.objects.filter(usuario=usuario).select_related('rol')
+        serializer = UsuarioRolSerializer(usuario_roles, many=True)
+        
+        return SuccessResponse(
+            message='Roles del usuario',
+            data=serializer.data
+        )
+##
+''''class PersonaViewSet(RestViewSet):
     queryset = Persona.objects.all()
     serializer_class = PersonaSerializer
     
@@ -186,7 +311,22 @@ class PersonaViewSet(RestViewSet):
     
     def perform_update(self, serializer):
         serializer.save(modificado_por=self.request.user, fecha_modificacion=timezone.now())
-
+'''
+class PersonaViewSet(RestViewSet):
+    queryset = Persona.objects.all()
+    serializer_class = PersonaSerializer
+    
+    def perform_create(self, serializer):
+        # Persona sí tiene campos de auditoría
+        serializer.save(creado_por=self.request.user)
+    
+    def perform_update(self, serializer):
+        serializer.save(modificado_por=self.request.user, fecha_modificacion=timezone.now())
+    
+    def perform_destroy(self, instance):
+        instance.eliminado_por = self.request.user
+        instance.fecha_eliminacion = timezone.now()
+        instance.save()
 @extend_schema(tags=['Gestión de Roles'])
 class RolViewSet(RestViewSet):
     queryset = Rol.objects.all()
