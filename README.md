@@ -39,25 +39,28 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 ### 6. Estructura del proyecto
-📦 backend
-├── 📁 almacen
-│   ├── 📁 settings
-│   │   ├── 📄 base.py
-│   │   ├── 📄 development.py
-│   │   └── 📄 production.py
-│   └── 📄 urls.py
-├── 📁 modulos
-│   ├── 📁 utilitario
-│   │   ├── 📄 models.py
-│   │   ├── 📄 response.py
-│   │   └── 📄 viewset.py
-│   └── 📁 users
-│       ├── 📄 models.py
-│       ├── 📄 serializers.py
-│       └── 📄 views.py
-├── 📁 media
-├── 📄 manage.py
-└── 📄 requirements.txt
+```text
+📦backend/
+├── 📁almacen/                    # Configuración principal
+│   ├── 📁settings/               # Configuraciones por entorno
+│   │   ├── 📄base.py            # Configuración base
+│   │   ├── 📄development.py      # Configuración desarrollo
+│   │   └── 📄production.py       # Configuración producción
+│   └── 📄urls.py                 # URLs principales
+├── 📁modulos/                    # Módulos de la aplicación
+│   ├── 📁utilitario/             # Módulo utilitario base
+│   │   ├── 📄models.py           # Modelos base (AuditoriaBase)
+│   │   ├── 📄response.py         # Respuestas estandarizadas
+│   │   └── 📄viewset.py          # ViewSet base personalizado
+│   └──📁 users/                  # Módulo de usuarios
+│       ├── 📄models.py           # Modelos (Usuario, Persona, Rol)
+│       ├── 📄serializers.py      # Serializers
+│       ├── 📄views.py            # Vistas y ViewSets
+│       └── 📄urls.py             # URLs del módulo
+├── 📁media/                       # Archivos subidos (imágenes)
+├── 📄manage.py                    # Script de gestión
+└── 📄requirements.txt             # Dependencias
+```
 ## 📧 Contacto
 Email: emersonantonio666@gmail.com
 
@@ -72,4 +75,4 @@ Simple JWT
 DRF Spectacular
 
 PostgreSQL
-
+```
