@@ -25,6 +25,8 @@ APP_TRIRD = [
     "rest_framework_simplejwt",
     "corsheaders",
     "drf_spectacular",
+    'rest_framework_simplejwt.token_blacklist',
+
 ]
 APP_LOCAL = [
     'modulos.utilitario',
@@ -90,6 +92,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    #"ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),  # ⏰ Cambiado a 1 minuto
+    #"REFRESH_TOKEN_LIFETIME": timedelta(minutes=2), # ⏰ 2 minutos para refresco
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
