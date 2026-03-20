@@ -1,0 +1,31 @@
+[{
+        "model": "ingresos.estadoingreso",
+        "pk": 1,
+        "fields": {
+            "nombre": "Pendiente",
+            "codigo": "PENDIENTE",
+            "descripcion": "Ingreso en proceso, pendiente de completar",
+            "orden": 10
+        }
+    },
+    {
+        "model": "ingresos.estadoingreso",
+        "pk": 2,
+        "fields": {
+            "nombre": "Completado",
+            "codigo": "COMPLETADO",
+            "descripcion": "Ingreso completado y stock actualizado",
+            "orden": 20
+        }
+    },
+    {
+        "model": "ingresos.estadoingreso",
+        "pk": 3,
+        "fields": {
+            "nombre": "Anulado",
+            "codigo": "ANULADO",
+            "descripcion": "Ingreso anulado, stock revertido",
+            "orden": 30
+        }
+    }
+]

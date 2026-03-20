@@ -31,6 +31,11 @@ APP_TRIRD = [
 APP_LOCAL = [
     'modulos.utilitario',
     'modulos.users',
+    'modulos.almacenes',
+    'modulos.proveedores',
+    'modulos.productos',
+    'modulos.responsables',
+    'modulos.ingresos',
 ]
 INSTALLED_APPS = APP_BASE + APP_TRIRD + APP_LOCAL
 

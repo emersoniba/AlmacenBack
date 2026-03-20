@@ -6,7 +6,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import login
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from modulos.utilitario.viewset import RestViewSet
 from modulos.utilitario.response import SuccessResponse, ErrorResponse
 from .models import Usuario, Persona, Rol, UsuarioRol
@@ -122,6 +123,7 @@ class AuthViewSet(viewsets.GenericViewSet):
             return ErrorResponse(message="Error en logout", errors=str(e))
 
 
+@extend_schema(tags=["Gestion de Usuarioss"])
 class UsuarioViewSet(RestViewSet):
     queryset = Usuario.objects.all().select_related("persona").prefetch_related("roles")
     serializer_class = UsuarioSerializer
@@ -222,6 +224,7 @@ class UsuarioViewSet(RestViewSet):
         except Exception as e:
             return ErrorResponse(message="Error al asignar rol", errors=str(e))
 
+    @extend_schema(parameters=[OpenApiParameter(name="rol_id",type=OpenApiTypes.INT,location=OpenApiParameter.PATH, )])
     @action(detail=True, methods=["delete"], url_path="quitar-rol/(?P<rol_id>[^/.]+)")
     def quitar_rol(self, request, pk=None, rol_id=None):
         usuario = self.get_object()
@@ -245,6 +248,7 @@ class UsuarioViewSet(RestViewSet):
         return SuccessResponse(message="Roles del usuario", data=serializer.data)
 
 
+@extend_schema(tags=["Gestion de Personas"])
 class PersonaViewSet(RestViewSet):
     queryset = Persona.objects.all()
     serializer_class = PersonaSerializer

@@ -22,3 +22,28 @@ http://127.0.0.1:8000/api/usuarios/
     "last_name": "Perez Gonzalez",
     "persona_id": "1234567"
 }
+/api/almacenes
+{
+    "nombre": "Almacén PRONTIS",
+    "sigla": "ALC3",
+    "ubicacion": "Av. Secundaria #123, Zona perez",
+    "activo": true
+}
+//spi/subalmacenes
+{
+    "almacen": 1,
+    "nombre": "Subalmacén Ferretería",
+    "sigla": "SAF",
+    "ubicacion": "Planta baja, estantería B",
+    "activo": true
+}
+/proveedores
+{
+    "razon_social": "FERRETERÍA EL TORNILLO LTDA",
+    "nit": "987654321",
+    "direccion": "Av. América #789, Cochabamba",
+    "telefono": "44678901",
+    "email": "ventas@eltornillo.com",
+    "contacto": "María López",
+    "activo": true
+}

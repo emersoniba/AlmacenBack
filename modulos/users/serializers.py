@@ -15,7 +15,7 @@ class PersonaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['creado_por', 'fecha_creacion', 'modificado_por', 'fecha_modificacion']
     
-    def get_nombre_completo(self, obj):
+    def get_nombre_completo(self, obj)->str:
         return f"{obj.nombres} {obj.apellido_paterno or ''} {obj.apellido_materno or ''}".strip()
 
 class RolSerializer(serializers.ModelSerializer):
@@ -54,7 +54,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
     
-    def get_roles(self, obj):
+    def get_roles(self, obj)-> list[dict]:
         usuario_roles = UsuarioRol.objects.filter(usuario=obj).select_related('rol')
         return [{'id': ur.rol.id, 'nombre': ur.rol.nombre} for ur in usuario_roles]
     
