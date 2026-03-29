@@ -9,7 +9,7 @@ SECRET_KEY = "django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0
 DEBUG = True
 AUTH_USER_MODEL = "users.Usuario"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["192.168.0.4","192.168.0.9", "localhost", "127.0.0.1"]
 
 
 APP_BASE = [
@@ -25,17 +25,16 @@ APP_TRIRD = [
     "rest_framework_simplejwt",
     "corsheaders",
     "drf_spectacular",
-    'rest_framework_simplejwt.token_blacklist',
-
+    "rest_framework_simplejwt.token_blacklist",
 ]
 APP_LOCAL = [
-    'modulos.utilitario',
-    'modulos.users',
-    'modulos.almacenes',
-    'modulos.proveedores',
-    'modulos.productos',
-    'modulos.responsables',
-    'modulos.ingresos',
+    "modulos.utilitario",
+    "modulos.users",
+    "modulos.almacenes",
+    "modulos.proveedores",
+    "modulos.productos",
+    "modulos.responsables",
+    "modulos.ingresos",
 ]
 INSTALLED_APPS = APP_BASE + APP_TRIRD + APP_LOCAL
 
@@ -71,7 +70,16 @@ WSGI_APPLICATION = "almacen.wsgi.application"
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",  # Puerto por defecto de Angular
+    "http://localhost:8081",  # Expo web react navtive
+    "http://10.0.2.2:8000",  # Emulador Androidreact navtive
+    "http://192.168.0.4:8000",         # Tu IP local (agregar esta línea)
+    "http://192.168.0.4",  
+    "http://localhost:8100", # ionic angular
+    "http://192.168.0.9:8100", # ionic angular celular prueba
 ]
+CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOW_ALL_ORIGINS = False  # Cambia a True solo para pruebas
+#CORS_ALLOW_CREDENTIALS = True
 
 # Configuración de Django REST Framework
 REST_FRAMEWORK = {
@@ -97,8 +105,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    #"ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),  # ⏰ Cambiado a 1 minuto
-    #"REFRESH_TOKEN_LIFETIME": timedelta(minutes=2), # ⏰ 2 minutos para refresco
+    # "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),  # ⏰ Cambiado a 1 minuto
+    # "REFRESH_TOKEN_LIFETIME": timedelta(minutes=2), # ⏰ 2 minutos para refresco
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -133,7 +141,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = "es-bo"
-TIME_ZONE = "America/La_Paz" 
+TIME_ZONE = "America/La_Paz"
 USE_I18N = True
 USE_TZ = True
 

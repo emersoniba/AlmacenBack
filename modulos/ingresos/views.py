@@ -19,9 +19,6 @@ class EstadoIngresoViewSet(RestViewSet):
     permission_classes = [IsAuthenticated]
 
 @extend_schema(tags=['Gestión de Ingresos'])
-@extend_schema_view(
-    create=extend_schema(request=IngresoCreateSerializer),
-)
 class IngresoViewSet(RestViewSet):
     queryset = Ingreso.objects.all().select_related(
         'proveedor', 'almacen', 'subalmacen', 'estado', 'creado_por'
@@ -40,9 +37,7 @@ class IngresoViewSet(RestViewSet):
     @action(detail=True, methods=['post'])
     @transaction.atomic
     def completar(self, request, pk=None):
-        """
-        Completar un ingreso y actualizar stocks
-        """
+        """Completar un ingreso y actualizar stocks"""
         ingreso = self.get_object()
         
         # Verificar estado actual
@@ -74,6 +69,7 @@ class IngresoViewSet(RestViewSet):
                 
                 # Actualizar cantidad
                 stock.cantidad += detalle.cantidad
+                stock.fecha_ultimo_ingreso = timezone.now()
                 stock.save()
                 
                 # Marcar detalle como actualizado
@@ -104,9 +100,7 @@ class IngresoViewSet(RestViewSet):
     @action(detail=True, methods=['post'])
     @transaction.atomic
     def anular(self, request, pk=None):
-        """
-        Anular un ingreso y revertir stocks
-        """
+        """Anular un ingreso y revertir stocks"""
         ingreso = self.get_object()
         observacion = request.data.get('observacion', '')
         
@@ -149,9 +143,7 @@ class IngresoViewSet(RestViewSet):
     
     @action(detail=True, methods=['post'])
     def agregar_detalle(self, request, pk=None):
-        """
-        Agregar un detalle a un ingreso pendiente
-        """
+        """Agregar un detalle a un ingreso pendiente"""
         ingreso = self.get_object()
         
         # Verificar estado
@@ -170,7 +162,11 @@ class IngresoViewSet(RestViewSet):
             )
         
         # Guardar detalle (sin actualizar stock aún)
-        detalle = serializer.save(ingreso=ingreso, stock_actualizado=False)
+        detalle = IngresoDetalle.objects.create(
+            ingreso=ingreso,
+            stock_actualizado=False,
+            **serializer.validated_data
+        )
         
         return SuccessResponse(
             message='Detalle agregado exitosamente',
@@ -179,10 +175,8 @@ class IngresoViewSet(RestViewSet):
         )
     
     @action(detail=True, methods=['delete'])
-    def quitar_detalle(self, request, pk=None, detalle_id=None):
-        """
-        Eliminar un detalle de un ingreso pendiente
-        """
+    def quitar_detalle(self, request, pk=None):
+        """Eliminar un detalle de un ingreso pendiente"""
         ingreso = self.get_object()
         
         # Verificar estado

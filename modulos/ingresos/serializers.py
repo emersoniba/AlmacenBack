@@ -19,7 +19,11 @@ class IngresoDetalleSerializer(serializers.ModelSerializer):
             'producto_unidad', 'cantidad', 'precio_unitario', 'subtotal',
             'stock_actualizado', 'fecha_actualizacion_stock'
         ]
-        read_only_fields = ['stock_actualizado', 'fecha_actualizacion_stock']
+        read_only_fields = ['id', 'stock_actualizado', 'fecha_actualizacion_stock']
+        # IMPORTANTE: ingreso es read_only en la creación
+        extra_kwargs = {
+            'ingreso': {'read_only': True}  # Esto soluciona el error
+        }
 
 class IngresoSerializer(serializers.ModelSerializer):
     # Información relacionada (solo lectura)
@@ -62,7 +66,7 @@ class IngresoSerializer(serializers.ModelSerializer):
 
 class IngresoCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear ingresos (con detalles)"""
-    detalles = IngresoDetalleSerializer(many=True)
+    detalles = IngresoDetalleSerializer(many=True, write_only=True)  # Solo escritura
     
     class Meta:
         model = Ingreso
@@ -78,10 +82,12 @@ class IngresoCreateSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
+        from django.utils import timezone
+        from .models import EstadoIngreso
+        
         detalles_data = validated_data.pop('detalles')
         
         # Generar código automático
-        from django.utils import timezone
         gestion = timezone.now().year
         ultimo_ingreso = Ingreso.objects.filter(gestion=gestion).order_by('-id').first()
         
@@ -97,7 +103,6 @@ class IngresoCreateSerializer(serializers.ModelSerializer):
         codigo = f"ING-{gestion}-{nuevo_numero:04d}"
         
         # Obtener estado por defecto (PENDIENTE)
-        from .models import EstadoIngreso
         estado_pendiente = EstadoIngreso.objects.filter(codigo='PENDIENTE').first()
         
         # Crear ingreso
@@ -109,7 +114,7 @@ class IngresoCreateSerializer(serializers.ModelSerializer):
             creado_por=self.context['request'].user
         )
         
-        # Crear detalles (sin actualizar stock aún)
+        # Crear detalles
         for detalle_data in detalles_data:
             IngresoDetalle.objects.create(
                 ingreso=ingreso,
