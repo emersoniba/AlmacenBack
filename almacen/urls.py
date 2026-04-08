@@ -36,4 +36,6 @@ urlpatterns = [
     path("api/", include("modulos.productos.urls")),
     path("api/", include("modulos.responsables.urls")),
     path("api/", include("modulos.ingresos.urls")),
+    path('api/', include('modulos.solicitudes.urls')),
+
 ]

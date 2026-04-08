@@ -1,0 +1,51 @@
+[{
+        "model": "solicitudes.estadosolicitud",
+        "pk": 1,
+        "fields": {
+            "nombre": "Pendiente",
+            "codigo": "PENDIENTE",
+            "descripcion": "Solicitud creada, pendiente de envío",
+            "orden": 10
+        }
+    },
+    {
+        "model": "solicitudes.estadosolicitud",
+        "pk": 2,
+        "fields": {
+            "nombre": "Enviado",
+            "codigo": "ENVIADO",
+            "descripcion": "Solicitud enviada para aprobación",
+            "orden": 20
+        }
+    },
+    {
+        "model": "solicitudes.estadosolicitud",
+        "pk": 3,
+        "fields": {
+            "nombre": "Aprobado",
+            "codigo": "APROBADO",
+            "descripcion": "Solicitud aprobada, pendiente de entrega",
+            "orden": 30
+        }
+    },
+    {
+        "model": "solicitudes.estadosolicitud",
+        "pk": 4,
+        "fields": {
+            "nombre": "Rechazado",
+            "codigo": "RECHAZADO",
+            "descripcion": "Solicitud rechazada",
+            "orden": 40
+        }
+    },
+    {
+        "model": "solicitudes.estadosolicitud",
+        "pk": 5,
+        "fields": {
+            "nombre": "Entregado",
+            "codigo": "ENTREGADO",
+            "descripcion": "Solicitud entregada",
+            "orden": 50
+        }
+    }
+]

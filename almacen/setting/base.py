@@ -9,7 +9,7 @@ SECRET_KEY = "django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0
 DEBUG = True
 AUTH_USER_MODEL = "users.Usuario"
 
-ALLOWED_HOSTS = ["192.168.0.4","192.168.0.9", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["192.168.0.9", "localhost", "127.0.0.1"]
 
 
 APP_BASE = [
@@ -35,6 +35,7 @@ APP_LOCAL = [
     "modulos.productos",
     "modulos.responsables",
     "modulos.ingresos",
+    "modulos.solicitudes",
 ]
 INSTALLED_APPS = APP_BASE + APP_TRIRD + APP_LOCAL
 
@@ -72,14 +73,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",  # Puerto por defecto de Angular
     "http://localhost:8081",  # Expo web react navtive
     "http://10.0.2.2:8000",  # Emulador Androidreact navtive
-    "http://192.168.0.4:8000",         # Tu IP local (agregar esta línea)
-    "http://192.168.0.4",  
+    "http://192.168.0.9:8000",         # Tu IP local (agregar esta línea)
+    "http://192.168.0.9",  
     "http://localhost:8100", # ionic angular
-    "http://192.168.0.9:8100", # ionic angular celular prueba
+    #"http://192.168.0.9:8100", # ionic angular celular prueba
 ]
 CORS_ALLOW_ALL_ORIGINS = True
-#CORS_ALLOW_ALL_ORIGINS = False  # Cambia a True solo para pruebas
-#CORS_ALLOW_CREDENTIALS = True
 
 # Configuración de Django REST Framework
 REST_FRAMEWORK = {

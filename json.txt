@@ -1,16 +1,6 @@
 creacion de persona
 http://127.0.0.1:8000/api/personas/
-{
-    "ci": "9789898",
-    "nombres": "Juan asd",
-    "apellido_paterno": "asd",
-    "apellido_materno": "dfdfd",
-    "cargo": "Administrador del Sistema",
-    "telefono": "76543210",
-    "direccion": "Calle Principal #123",
-    "correo": "admin@gmail.com",
-    "unidad": "TI"
-}
+cc
 
 asigancion de user
 http://127.0.0.1:8000/api/usuarios/
