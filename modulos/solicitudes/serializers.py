@@ -156,75 +156,63 @@ class SolicitudListSerializer(serializers.ModelSerializer):
 class SolicitudDetailSerializer(serializers.ModelSerializer):
     """Serializer para detalle de solicitud (con detalles)"""
 
-    solicitante = UsuarioSerializer(read_only=True)
-    aprobador = UsuarioSerializer(read_only=True)
-    almacenero = UsuarioSerializer(read_only=True)
+    # Agregar estos campos como SerializerMethodField
+    solicitante_nombre = serializers.SerializerMethodField()
+    solicitante_cargo = serializers.SerializerMethodField()
+    aprobador_nombre = serializers.SerializerMethodField()
+    almacenero_nombre = serializers.SerializerMethodField()
+
     almacen_nombre = serializers.CharField(source="almacen.nombre", read_only=True)
     subalmacen_nombre = serializers.CharField(
         source="subalmacen.nombre", read_only=True
     )
     estado_nombre = serializers.CharField(source="estado.nombre", read_only=True)
     estado_codigo = serializers.CharField(source="estado.codigo", read_only=True)
+    estado_descripcion = serializers.CharField(
+        source="estado.descripcion", read_only=True
+    )
     detalles = DetalleSolicitudSerializer(many=True, read_only=True)
 
     class Meta:
         model = Solicitud
         fields = "__all__"
+        # Agregar los nuevos campos
+        extra_fields = [
+            "solicitante_nombre",
+            "solicitante_cargo",
+            "aprobador_nombre",
+            "almacenero_nombre",
+        ]
 
-    def get_solicitante(self, obj):
-        """Obtener datos completos del solicitante"""
-        if obj.solicitante:
-            data = {
-                "id": obj.solicitante.id,
-                "username": obj.solicitante.username,
-            }
-            if obj.solicitante.persona:
-                persona = obj.solicitante.persona
-                data["nombre_completo"] = (
-                    f"{persona.nombres} {persona.apellido_paterno or ''} {persona.apellido_materno or ''}".strip()
-                )
-                data["cargo"] = persona.cargo
-                data["unidad"] = persona.unidad
-            else:
-                data["nombre_completo"] = obj.solicitante.username
-                data["cargo"] = None
-                data["unidad"] = None
-            return data
+    def get_solicitante_nombre(self, obj):
+        """Obtener nombre completo del solicitante"""
+        if obj.solicitante and obj.solicitante.persona:
+            persona = obj.solicitante.persona
+            nombre_completo = f"{persona.nombres} {persona.apellido_paterno or ''} {persona.apellido_materno or ''}".strip()
+            return nombre_completo or obj.solicitante.username
+        return obj.solicitante.username if obj.solicitante else None
+
+    def get_solicitante_cargo(self, obj):
+        """Obtener cargo del solicitante"""
+        if obj.solicitante and obj.solicitante.persona:
+            return obj.solicitante.persona.cargo
         return None
 
-    def get_aprobador(self, obj):
-        """Obtener datos del aprobador"""
-        if obj.aprobador:
-            data = {
-                "id": obj.aprobador.id,
-                "username": obj.aprobador.username,
-            }
-            if obj.aprobador.persona:
-                persona = obj.aprobador.persona
-                data["nombre_completo"] = (
-                    f"{persona.nombres} {persona.apellido_paterno or ''} {persona.apellido_materno or ''}".strip()
-                )
-            else:
-                data["nombre_completo"] = obj.aprobador.username
-            return data
-        return None
+    def get_aprobador_nombre(self, obj):
+        """Obtener nombre del aprobador"""
+        if obj.aprobador and obj.aprobador.persona:
+            persona = obj.aprobador.persona
+            nombre_completo = f"{persona.nombres} {persona.apellido_paterno or ''} {persona.apellido_materno or ''}".strip()
+            return nombre_completo or obj.aprobador.username
+        return obj.aprobador.username if obj.aprobador else None
 
-    def get_almacenero(self, obj):
-        """Obtener datos del almacenero"""
-        if obj.almacenero:
-            data = {
-                "id": obj.almacenero.id,
-                "username": obj.almacenero.username,
-            }
-            if obj.almacenero.persona:
-                persona = obj.almacenero.persona
-                data["nombre_completo"] = (
-                    f"{persona.nombres} {persona.apellido_paterno or ''} {persona.apellido_materno or ''}".strip()
-                )
-            else:
-                data["nombre_completo"] = obj.almacenero.username
-            return data
-        return None
+    def get_almacenero_nombre(self, obj):
+        """Obtener nombre del almacenero"""
+        if obj.almacenero and obj.almacenero.persona:
+            persona = obj.almacenero.persona
+            nombre_completo = f"{persona.nombres} {persona.apellido_paterno or ''} {persona.apellido_materno or ''}".strip()
+            return nombre_completo or obj.almacenero.username
+        return obj.almacenero.username if obj.almacenero else None
 
 
 class DetalleSolicitudCreateSerializer(serializers.Serializer):
@@ -360,3 +348,32 @@ class SolicitudEntregarSerializer(serializers.Serializer):
 
     entregas = serializers.ListField(child=serializers.DictField(), required=True)
     observacion = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_entregas(self, value):
+        """Validar y convertir cantidades"""
+        for entrega in value:
+            detalle_id = entrega.get('detalle_id')
+            cantidad = entrega.get('cantidad_entregada')
+            
+            if not detalle_id:
+                raise serializers.ValidationError("detalle_id es requerido")
+            
+            if cantidad is None:
+                raise serializers.ValidationError("cantidad_entregada es requerida")
+            
+            # Convertir a Decimal
+            try:
+                from decimal import Decimal
+                entrega['cantidad_entregada'] = Decimal(str(cantidad))
+            except (ValueError, TypeError):
+                raise serializers.ValidationError(
+                    f"cantidad_entregada inválida: {cantidad}"
+                )
+            
+            # Validar que no sea negativa
+            if entrega['cantidad_entregada'] < 0:
+                raise serializers.ValidationError(
+                    "cantidad_entregada no puede ser negativa"
+                )
+        
+        return value
