@@ -2,26 +2,32 @@ services:
   - type: web
     name: almacen-backend
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+    repo: https://https://github.com/emersoniba/AlmacenBack
+    plan: free
+    region: oregon
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn almacen.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
-      - key: DEBUG
+      - key: DJANGO_ENV
+        value: production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
         value: false
+      - key: DJANGO_ALLOWED_HOSTS
+        value: almacen-backend.onrender.com,localhost
       - key: DATABASE_URL
         fromDatabase:
           name: almacen-db
           property: connectionString
-
-  - type: web
-    name: almacen-frontend
-    runtime: static
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist/front-almacen
-    envVars:
-      - key: API_URL
-        value: https://almacen-backend.onrender.com
+      - key: DB_ENGINE_PROD
+        value: django.db.backends.postgresql
+      - key: CORS_ALLOWED_ORIGINS_PROD
+        value: https://tu-frontend.onrender.com,https://almacen-backend.onrender.com
 
 databases:
   - name: almacen-db
-    databaseName: almacen_db
-    user: postgres
+    databaseName: db.Almacen
+    user: almacen_user
+    plan: free
+    region: oregon

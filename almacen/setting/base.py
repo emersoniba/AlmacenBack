@@ -4,9 +4,18 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = "django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0"
-
+#SECRET_KEY = "django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0"
+# ============================================
+# SEGURIDAD
+# ============================================
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0')
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# Para Render, permitir el host generado
+if IS_PROD:
+    ALLOWED_HOSTS.append('*.onrender.com')
+
 AUTH_USER_MODEL = "users.Usuario"
 # ============================================
 # DETECTAR ENTORNO
@@ -97,33 +106,6 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-}
-# ============================================
-# BASE DE DATOS - Configuración dinámica
-# ============================================
-def get_db_config():
-    """Obtener configuración de base de datos según entorno"""
-    if IS_DEV:
-        return {
-            'ENGINE': os.getenv('DB_ENGINE_DEV', 'django.db.backends.postgresql'),
-            'NAME': os.getenv('DB_NAME_DEV', 'db.Almacen'),
-            'USER': os.getenv('DB_USER_DEV', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD_DEV', '1234'),
-            'HOST': os.getenv('DB_HOST_DEV', 'localhost'),
-            'PORT': os.getenv('DB_PORT_DEV', '5432'),
-        }
-    else:
-        return {
-            'ENGINE': os.getenv('DB_ENGINE_PROD', 'django.db.backends.postgresql'),
-            'NAME': os.getenv('DB_NAME_PROD', 'almacen_db_prod'),
-            'USER': os.getenv('DB_USER_PROD', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD_PROD', '1234'),
-            'HOST': os.getenv('DB_HOST_PROD', 'localhost'),
-            'PORT': os.getenv('DB_PORT_PROD', '5432'),
-        }
-
-DATABASES = {
-    'default': get_db_config()
 }
 
 # Configuración de JWT

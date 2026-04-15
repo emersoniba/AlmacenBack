@@ -1,29 +1,49 @@
+#!/usr/bin/env python
 import os
 import sys
 
 def switch_environment(env='development'):
     """Cambia entre entornos de desarrollo y producción"""
     
-    settings_path = 'D:\\almacen\\BackendAlmacen\\core\\settings\\__init__.py'
+    env_file = '.env'
     
-    if env == 'development':
-        content = """from .development import *\n"""
-        print("🔄 Cambiando a entorno de DESARROLLO")
-    elif env == 'production':
-        content = """from .production import *\n"""
-        print("🔄 Cambiando a entorno de PRODUCCIÓN")
-    else:
-        print(f"❌ Entorno inválido: {env}")
+    if not os.path.exists(env_file):
+        print("❌ Archivo .env no encontrado")
         return
     
-    with open(settings_path, 'w') as f:
-        f.write(content)
+    # Leer archivo .env
+    with open(env_file, 'r') as f:
+        lines = f.readlines()
     
-    print(f"✅ Entorno cambiado a: {env}")
-    print("💡 Recuerda: python manage.py runserver")
+    # Modificar la línea DJANGO_ENV
+    new_lines = []
+    modified = False
+    
+    for line in lines:
+        if line.startswith('DJANGO_ENV='):
+            new_lines.append(f'DJANGO_ENV={env}\n')
+            modified = True
+        else:
+            new_lines.append(line)
+    
+    if not modified:
+        new_lines.insert(0, f'DJANGO_ENV={env}\n')
+    
+    # Escribir archivo
+    with open(env_file, 'w') as f:
+        f.writelines(new_lines)
+    
+    print(f"✅ Entorno cambiado a: {env.upper()}")
+    
+    if env == 'production':
+        print("\n⚠️  ADVERTENCIA:")
+        print("   - DEBUG=False")
+        print("   - SSL activado")
+        print("   - Recolecta archivos estáticos: python manage.py collectstatic --noinput")
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and sys.argv[1] in ['development', 'production']:
         switch_environment(sys.argv[1])
     else:
         print("Uso: python switch_env.py [development|production]")
+        print("Ejemplo: python switch_env.py development")
