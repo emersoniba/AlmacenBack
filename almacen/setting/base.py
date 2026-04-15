@@ -6,8 +6,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = "django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0"
 
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 AUTH_USER_MODEL = "users.Usuario"
+# ============================================
+# DETECTAR ENTORNO
+# ============================================
+ENV = os.getenv('DJANGO_ENV', 'development')
+IS_DEV = ENV == 'development'
+IS_PROD = ENV == 'production'
+
+print(f"🌍 Entorno: {ENV.upper()}")
 
 ALLOWED_HOSTS = ["192.168.0.9", "localhost", "127.0.0.1"]
 
@@ -90,16 +98,34 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# ============================================
+# BASE DE DATOS - Configuración dinámica
+# ============================================
+def get_db_config():
+    """Obtener configuración de base de datos según entorno"""
+    if IS_DEV:
+        return {
+            'ENGINE': os.getenv('DB_ENGINE_DEV', 'django.db.backends.postgresql'),
+            'NAME': os.getenv('DB_NAME_DEV', 'db.Almacen'),
+            'USER': os.getenv('DB_USER_DEV', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD_DEV', '1234'),
+            'HOST': os.getenv('DB_HOST_DEV', 'localhost'),
+            'PORT': os.getenv('DB_PORT_DEV', '5432'),
+        }
+    else:
+        return {
+            'ENGINE': os.getenv('DB_ENGINE_PROD', 'django.db.backends.postgresql'),
+            'NAME': os.getenv('DB_NAME_PROD', 'almacen_db_prod'),
+            'USER': os.getenv('DB_USER_PROD', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD_PROD', '1234'),
+            'HOST': os.getenv('DB_HOST_PROD', 'localhost'),
+            'PORT': os.getenv('DB_PORT_PROD', '5432'),
+        }
 
-"""DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+DATABASES = {
+    'default': get_db_config()
 }
-"""
+
 # Configuración de JWT
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
