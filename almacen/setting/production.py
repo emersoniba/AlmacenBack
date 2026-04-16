@@ -5,17 +5,13 @@ import os
 DEBUG = False
 
 # Base de datos para producción
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME_PROD', 'almacen_db_prod'),
-        'USER': os.getenv('DB_USER_PROD', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD_PROD', '1234'),
-        'HOST': os.getenv('DB_HOST_PROD', 'localhost'),
-        'PORT': os.getenv('DB_PORT_PROD', '5432'),
-    }
-}
+import dj_database_url
 
+DATABASES = {
+    'default': dj_database_url.parse(
+        os.getenv("DATABASE_URL")
+    )
+}
 # ============================================
 # CORRECCIÓN: ALLOWED_HOSTS para Render
 # ============================================
