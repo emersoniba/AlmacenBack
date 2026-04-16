@@ -6,6 +6,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 #SECRET_KEY = "django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0"
 # ============================================
+# DETECTAR ENTORNO
+# ============================================
+ENV = os.getenv('DJANGO_ENV', 'development')
+IS_DEV = ENV == 'development'
+IS_PROD = ENV == 'production'
+
+# ============================================
 # SEGURIDAD
 # ============================================
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-otpune@s+*ago&6#1brmie+a2c60usb@msa$&8#a77135n8l%0')
@@ -17,12 +24,6 @@ if IS_PROD:
     ALLOWED_HOSTS.append('*.onrender.com')
 
 AUTH_USER_MODEL = "users.Usuario"
-# ============================================
-# DETECTAR ENTORNO
-# ============================================
-ENV = os.getenv('DJANGO_ENV', 'development')
-IS_DEV = ENV == 'development'
-IS_PROD = ENV == 'production'
 
 print(f"🌍 Entorno: {ENV.upper()}")
 
