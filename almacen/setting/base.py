@@ -27,11 +27,10 @@ AUTH_USER_MODEL = "users.Usuario"
 
 print(f"🌍 Entorno: {ENV.upper()}")
 
-#ALLOWED_HOSTS = ["192.168.0.9", "localhost", "127.0.0.1"]
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-if os.getenv('DJANGO_ENV') == 'production':
-    ALLOWED_HOSTS.append('.onrender.com')
-
+ALLOWED_HOSTS = os.getenv(
+    'DJANGO_ALLOWED_HOSTS',
+    'localhost,127.0.0.1'
+).split(',')
 
 APP_BASE = [
     "django.contrib.admin",

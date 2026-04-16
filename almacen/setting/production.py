@@ -31,8 +31,10 @@ ALLOWED_HOSTS.extend([
     '127.0.0.1',
 ])
 
-# Eliminar duplicados manteniendo orden
-ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS))
+allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host]
+
+ALLOWED_HOSTS.append('.onrender.com')
 
 # CORS para producción
 cors_origins = os.getenv('CORS_ALLOWED_ORIGINS_PROD', 'https://tudominio.com')
