@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Usuario, Persona, Rol, UsuarioRol
+from rest_framework import serializers
+from django.contrib.auth.hashers import check_password
+from .models import Usuario
+from .rate_limiter import LoginRateLimiter
 
 class PersonaSerializer(serializers.ModelSerializer):
     nombre_completo = serializers.SerializerMethodField()
@@ -134,12 +137,6 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
         
         return usuario
 
-# serializers.py
-from rest_framework import serializers
-from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import check_password
-from .models import Usuario
-
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True, style={'input_type': 'password'})
@@ -148,26 +145,56 @@ class LoginSerializer(serializers.Serializer):
         username = data.get('username')
         password = data.get('password')
         
+        # Obtener request del contexto
+        request = self.context.get('request')
+        
         if not username or not password:
             raise serializers.ValidationError({
                 "message": "Debe proporcionar username y password",
                 "code": "missing_credentials"
             })
         
+        # ============================================
+        # RATE LIMITING - Verificar bloqueo
+        # ============================================
+        ip_address = LoginRateLimiter.get_client_ip(request) if request else None
+        
+        is_blocked, wait_minutes = LoginRateLimiter.is_blocked(username, ip_address)
+        
+        if is_blocked:
+            raise serializers.ValidationError({
+                "message": f"Demasiados intentos fallidos. Espere {wait_minutes} minutos antes de volver a intentar",
+                "code": "rate_limit_exceeded",
+                "wait_minutes": wait_minutes
+            })
+        
         # Intentar encontrar el usuario primero para mensaje más específico
         try:
             user = Usuario.objects.get(username=username)
         except Usuario.DoesNotExist:
+            # Registrar intento fallido
+            if request:
+                LoginRateLimiter.register_attempt(request, username, success=False)
+            
+            remaining = LoginRateLimiter.get_remaining_attempts(username, ip_address)
             raise serializers.ValidationError({
                 "message": "El usuario no existe",
-                "code": "user_not_found"
+                "code": "user_not_found",
+                "remaining_attempts": remaining
             })
         
         # Verificar contraseña
         if not check_password(password, user.password):
+            # Registrar intento fallido
+            if request:
+                LoginRateLimiter.register_attempt(request, username, success=False)
+            
+            remaining = LoginRateLimiter.get_remaining_attempts(username, ip_address)
+            
             raise serializers.ValidationError({
-                "message": "Contraseña incorrecta",
-                "code": "invalid_password"
+                "message": f"Contraseña incorrecta. Le quedan {remaining} intento(s)",
+                "code": "invalid_password",
+                "remaining_attempts": remaining
             })
         
         # Verificar si el usuario está activo
@@ -176,6 +203,10 @@ class LoginSerializer(serializers.Serializer):
                 "message": "Usuario inactivo. Contacte al administrador",
                 "code": "user_inactive"
             })
+        
+        # Login exitoso - registrar intento exitoso
+        if request:
+            LoginRateLimiter.register_attempt(request, username, success=True)
         
         data['user'] = user
         return data

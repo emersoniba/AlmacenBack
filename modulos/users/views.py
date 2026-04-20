@@ -20,40 +20,54 @@ from .serializers import (
     TokenResponseSerializer,
     UsuarioRolSerializer,
 )
-
-
-# views.py
 @extend_schema(tags=["Gestión de Users"])
 class AuthViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
 
+    def get_serializer_context(self):
+        """Pasar request al serializer"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     @action(detail=False, methods=["post"], url_path="login")
     def login(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         
         if not serializer.is_valid():
-            # Extraer el mensaje de error del serializer
             errors = serializer.errors
             error_message = "Error de autenticación"
+            remaining_attempts = None
+            wait_minutes = None
             
-            # Si hay un error con estructura personalizada
-            if isinstance(errors, dict) and 'non_field_errors' in errors:
-                error_detail = errors['non_field_errors'][0]
-                if isinstance(error_detail, dict):
-                    error_message = error_detail.get('message', 'Credenciales inválidas')
-                else:
-                    error_message = str(error_detail)
-            elif isinstance(errors, dict):
-                # Errores de campo específicos
-                for field, field_errors in errors.items():
-                    if field_errors:
-                        error_message = str(field_errors[0])
-                        break
+            # Extraer información del error
+            if isinstance(errors, dict):
+                if 'non_field_errors' in errors:
+                    error_detail = errors['non_field_errors'][0]
+                    if isinstance(error_detail, dict):
+                        error_message = error_detail.get('message', 'Credenciales inválidas')
+                        remaining_attempts = error_detail.get('remaining_attempts')
+                        wait_minutes = error_detail.get('wait_minutes')
+                elif 'username' in errors:
+                    error_message = str(errors['username'][0])
+                elif 'password' in errors:
+                    error_message = str(errors['password'][0])
+            
+            # Construir respuesta de error personalizada
+            response_data = {
+                "message": error_message,
+                "errors": errors
+            }
+            
+            if remaining_attempts is not None:
+                response_data["remaining_attempts"] = remaining_attempts
+            if wait_minutes is not None:
+                response_data["wait_minutes"] = wait_minutes
             
             return ErrorResponse(
                 message=error_message,
-                errors=errors,
+                errors=response_data,
                 status_code=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -77,7 +91,8 @@ class AuthViewSet(viewsets.GenericViewSet):
                 "user": user_serializer.data,
             },
         )
-
+        
+        
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request):
         serializer = RegistroUsuarioSerializer(data=request.data)

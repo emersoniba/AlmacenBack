@@ -66,3 +66,23 @@ class UsuarioRol(models.Model):
     
     def __str__(self):
         return f"{self.usuario.username} - {self.rol.nombre}"
+
+class LoginAttempt(models.Model):
+    """Registro de intentos de login para prevenir ataques de fuerza bruta"""
+    username = models.CharField("Nombre de usuario", max_length=150, db_index=True)
+    ip_address = models.GenericIPAddressField("Dirección IP", null=True, blank=True)
+    user_agent = models.TextField("User Agent", blank=True, null=True)
+    success = models.BooleanField("¿Exitoso?", default=False)
+    attempt_time = models.DateTimeField("Fecha y hora del intento", auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Intento de Login"
+        verbose_name_plural = "Intentos de Login"
+        ordering = ['-attempt_time']
+        indexes = [
+            models.Index(fields=['username', 'attempt_time']),
+            models.Index(fields=['ip_address', 'attempt_time']),
+        ]
+    
+    def __str__(self):
+        return f"{self.username} - {self.success} - {self.attempt_time}"
