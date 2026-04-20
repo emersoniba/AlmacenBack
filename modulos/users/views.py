@@ -22,6 +22,7 @@ from .serializers import (
 )
 
 
+# views.py
 @extend_schema(tags=["Gestión de Users"])
 class AuthViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
@@ -30,11 +31,30 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["post"], url_path="login")
     def login(self, request):
         serializer = self.get_serializer(data=request.data)
+        
         if not serializer.is_valid():
+            # Extraer el mensaje de error del serializer
+            errors = serializer.errors
+            error_message = "Error de autenticación"
+            
+            # Si hay un error con estructura personalizada
+            if isinstance(errors, dict) and 'non_field_errors' in errors:
+                error_detail = errors['non_field_errors'][0]
+                if isinstance(error_detail, dict):
+                    error_message = error_detail.get('message', 'Credenciales inválidas')
+                else:
+                    error_message = str(error_detail)
+            elif isinstance(errors, dict):
+                # Errores de campo específicos
+                for field, field_errors in errors.items():
+                    if field_errors:
+                        error_message = str(field_errors[0])
+                        break
+            
             return ErrorResponse(
-                message="Error de validación",
-                errors=serializer.errors,
-                status_code=status.HTTP_400_BAD_REQUEST,
+                message=error_message,
+                errors=errors,
+                status_code=status.HTTP_401_UNAUTHORIZED
             )
 
         user = serializer.validated_data["user"]
@@ -50,7 +70,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         user_serializer = UsuarioSerializer(user, context={"request": request})
 
         return SuccessResponse(
-            message="Login exitoso",
+            message="Inicio de sesión exitoso",
             data={
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),

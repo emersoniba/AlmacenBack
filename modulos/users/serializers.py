@@ -134,6 +134,12 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
         
         return usuario
 
+# serializers.py
+from rest_framework import serializers
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
+from .models import Usuario
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True, style={'input_type': 'password'})
@@ -143,17 +149,35 @@ class LoginSerializer(serializers.Serializer):
         password = data.get('password')
         
         if not username or not password:
-            raise serializers.ValidationError("Debe proporcionar username y password")
+            raise serializers.ValidationError({
+                "message": "Debe proporcionar username y password",
+                "code": "missing_credentials"
+            })
         
-        user = authenticate(username=username, password=password)
+        # Intentar encontrar el usuario primero para mensaje más específico
+        try:
+            user = Usuario.objects.get(username=username)
+        except Usuario.DoesNotExist:
+            raise serializers.ValidationError({
+                "message": "El usuario no existe",
+                "code": "user_not_found"
+            })
         
-        if user:
-            if not user.is_active:
-                raise serializers.ValidationError("Usuario inactivo")
-            data['user'] = user
-        else:
-            raise serializers.ValidationError("Credenciales inválidas")
+        # Verificar contraseña
+        if not check_password(password, user.password):
+            raise serializers.ValidationError({
+                "message": "Contraseña incorrecta",
+                "code": "invalid_password"
+            })
         
+        # Verificar si el usuario está activo
+        if not user.is_active:
+            raise serializers.ValidationError({
+                "message": "Usuario inactivo. Contacte al administrador",
+                "code": "user_inactive"
+            })
+        
+        data['user'] = user
         return data
 
 class TokenResponseSerializer(serializers.Serializer):

@@ -54,7 +54,7 @@ class RestViewSet(viewsets.ModelViewSet):
         )
 
         if not serializer.is_valid():
-            logger.error(f"Error de validación en actualización: {serializer.errors}")
+            logger.error(f"validación en actualización: {serializer.errors}")
             return ErrorResponse(
                 message="Datos no válidos para actualización",
                 errors=serializer.errors,
