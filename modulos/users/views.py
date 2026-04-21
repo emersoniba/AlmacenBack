@@ -46,7 +46,8 @@ class AuthViewSet(viewsets.GenericViewSet):
                 if 'non_field_errors' in errors:
                     error_detail = errors['non_field_errors'][0]
                     if isinstance(error_detail, dict):
-                        error_message = error_detail.get('message', 'Credenciales inválidas')
+                        #error_message = error_detail.get('message', 'Credenciales inválidas')
+                        error_message = error_detail.get('message', 'Usuario no encontrado')
                         remaining_attempts = error_detail.get('remaining_attempts')
                         wait_minutes = error_detail.get('wait_minutes')
                 elif 'username' in errors:

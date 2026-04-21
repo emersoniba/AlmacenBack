@@ -7,6 +7,7 @@ from django.db import models
 class LoginRateLimiter:
     """
     Limitador de intentos de login para prevenir ataques de fuerza bruta
+    SOLO para usuarios que EXISTEN en el sistema
     """
     
     # Configuración por defecto
@@ -26,7 +27,7 @@ class LoginRateLimiter:
     
     @classmethod
     def register_attempt(cls, request, username, success=False):
-        """Registrar un intento de login"""
+        """Registrar un intento de login SOLO para usuarios existentes"""
         try:
             LoginAttempt.objects.create(
                 username=username,
@@ -34,66 +35,61 @@ class LoginRateLimiter:
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
                 success=success
             )
+            print(f"Intento registrado para {username}: success={success}")
         except Exception as e:
             print(f"Error registrando intento: {e}")
     
     @classmethod
-    def get_failed_attempts(cls, username, ip_address):
-        """Obtener número de intentos fallidos recientes"""
+    def get_failed_attempts(cls, username):
+        """Obtener número de intentos fallidos recientes para un usuario existente"""
         since_time = timezone.now() - timedelta(minutes=cls.WINDOW_MINUTES)
         
-        # Contar intentos fallidos por username o IP
+        # Solo contar intentos del username específico (NO por IP)
         attempts = LoginAttempt.objects.filter(
+            username=username,
             success=False,
             attempt_time__gte=since_time
-        ).filter(
-            # Intentos desde la misma IP O con el mismo username
-            models.Q(username=username) | models.Q(ip_address=ip_address)
         )
         
         return attempts.count()
     
     @classmethod
-    def is_blocked(cls, username, ip_address):
-        """Verificar si el usuario/IP está bloqueado"""
+    def is_blocked(cls, username):
+        """Verificar si el usuario existente está bloqueado"""
         since_time = timezone.now() - timedelta(minutes=cls.WINDOW_MINUTES)
         
         failed_attempts = LoginAttempt.objects.filter(
+            username=username,
             success=False,
             attempt_time__gte=since_time
-        ).filter(
-            models.Q(username=username) | models.Q(ip_address=ip_address)
         ).count()
         
-        print(f"Intentos fallidos para {username}: {failed_attempts}")  # Debug
+        print(f"Intentos fallidos para {username}: {failed_attempts}")
         
         if failed_attempts >= cls.MAX_ATTEMPTS:
             last_attempt = LoginAttempt.objects.filter(
+                username=username,
                 success=False,
                 attempt_time__gte=since_time
-            ).filter(
-                models.Q(username=username) | models.Q(ip_address=ip_address)
             ).order_by('-attempt_time').first()
             
             if last_attempt:
                 time_since_last = timezone.now() - last_attempt.attempt_time
                 if time_since_last.total_seconds() < (cls.BLOCK_TIME_MINUTES * 60):
                     remaining = cls.BLOCK_TIME_MINUTES - (time_since_last.total_seconds() / 60)
-                    print(f"Usuario {username} bloqueado. Tiempo restante: {remaining}")  # Debug
+                    print(f"Usuario {username} bloqueado. Tiempo restante: {remaining}")
                     return True, round(remaining)
         
         return False, 0
     
     @classmethod
-    def get_remaining_attempts(cls, username, ip_address):
-        """Obtener intentos restantes"""
-        failed_attempts = cls.get_failed_attempts(username, ip_address)
+    def get_remaining_attempts(cls, username):
+        """Obtener intentos restantes para un usuario existente"""
+        failed_attempts = cls.get_failed_attempts(username)
         return max(0, cls.MAX_ATTEMPTS - failed_attempts)
     
     @classmethod
-    def get_wait_time(cls, username, ip_address):
-        """Obtener tiempo de espera restante en minutos"""
-        is_blocked, remaining = cls.is_blocked(username, ip_address)
-        if is_blocked:
-            return remaining
-        return 0
+    def clear_attempts(cls, username):
+        """Limpiar intentos fallidos después de login exitoso"""
+        deleted_count = LoginAttempt.objects.filter(username=username, success=False).delete()[0]
+        print(f"Intentos fallidos limpiados para {username}: {deleted_count} registros eliminados")
